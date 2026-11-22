@@ -98,9 +98,9 @@ export function updateGuard(g, dt, thief, blockers, noise, alarm) {
 }
 
 export function coneColor(state) {
-  if (state === 'alert') return 'rgba(255, 64, 64, 0.34)';
-  if (state === 'suspicious') return 'rgba(255, 196, 64, 0.30)';
-  return 'rgba(255, 214, 110, 0.20)';
+  if (state === 'alert') return 'rgba(255, 64, 64, 0.38)';
+  if (state === 'suspicious') return 'rgba(255, 196, 64, 0.34)';
+  return 'rgba(255, 214, 110, 0.24)';
 }
 
 export function coneEdgeColor(state) {

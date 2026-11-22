@@ -60,15 +60,17 @@ export function applyShot(state, shot, seed) {
     return;
   }
   if (shot === 'end') {
-    // GETAWAY: heist 1 won, vault emptied, loot tallied.
-    loadHeist(state, 0);
+    // GETAWAY: heist 5 won, vault emptied, loot tallied. A different heist
+    // from the cover (heist 1) and the alert shot (heist 2), so the four
+    // screenshots together prove distinct locations.
+    loadHeist(state, 4);
     state.heist.vault.taken = true;
     state.heist.treasures[0].taken = true;
     state.heist.treasures[2].taken = true;
-    state.heist.treasures[3].taken = true;
+    state.heist.treasures[4].taken = true;
     state.heist.treasures[5].taken = true;
     state.thief.x = 1196; state.thief.y = 130;
-    state.score = 730;
+    state.score = 930;
     state.alarm = 12;
     state.alarmPeak = 42;
     state.spotted = 1;

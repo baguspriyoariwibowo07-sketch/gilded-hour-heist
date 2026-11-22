@@ -31,6 +31,28 @@ function text(ctx, s, x, y, size, color, weight = 'bold', align = 'left') {
   ctx.fillText(s, x, y);
 }
 
+// A dark pill behind a label so it reads at small size even over a bright cone.
+function labelPill(ctx, s, x, y, size, color) {
+  ctx.font = `bold ${size}px Georgia, 'Times New Roman', serif`;
+  const w = ctx.measureText(s).width;
+  const pad = 8;
+  ctx.fillStyle = 'rgba(11, 14, 26, 0.85)';
+  rr(ctx, x - w / 2 - pad, y - size / 2 - 6, w + pad * 2, size + 12, 7);
+  ctx.fill();
+  text(ctx, s, x, y, size, color, 'bold', 'center');
+}
+
+// Right-aligned pill: the text ends at x (used by the vault label).
+function labelPillRight(ctx, s, x, y, size, color) {
+  ctx.font = `bold ${size}px Georgia, 'Times New Roman', serif`;
+  const w = ctx.measureText(s).width;
+  const pad = 8;
+  ctx.fillStyle = 'rgba(11, 14, 26, 0.85)';
+  rr(ctx, x - w - pad, y - size / 2 - 6, w + pad * 2, size + 12, 7);
+  ctx.fill();
+  text(ctx, s, x, y, size, color, 'bold', 'right');
+}
+
 function drawCone(ctx, x, y, angle, range, half, fill, edge) {
   ctx.beginPath();
   ctx.moveTo(x, y);
@@ -39,45 +61,49 @@ function drawCone(ctx, x, y, angle, range, half, fill, edge) {
   ctx.fillStyle = fill;
   ctx.fill();
   ctx.strokeStyle = edge;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 3;
   ctx.stroke();
 }
 
 function drawGuard(ctx, g) {
   drawCone(ctx, g.x, g.y, g.angle, CONE_RANGE, CONE_HALF_ANGLE, coneColor(g.state), coneEdgeColor(g.state));
-  // Body: dark uniform, brass buttons, helmet brim.
-  ctx.beginPath(); ctx.arc(g.x, g.y, 15, 0, Math.PI * 2); ctx.fillStyle = '#2c3550'; ctx.fill();
+  // Body: dark uniform, brass buttons, helmet brim. Bigger than v1 so the
+  // guard reads as a person, not a dot, when the cover is shrunk.
+  ctx.beginPath(); ctx.arc(g.x, g.y, 17, 0, Math.PI * 2); ctx.fillStyle = '#2c3550'; ctx.fill();
   ctx.lineWidth = 3; ctx.strokeStyle = g.state === 'alert' ? '#ff4040' : g.state === 'suspicious' ? '#ffc440' : '#8a94b0'; ctx.stroke();
-  ctx.beginPath(); ctx.arc(g.x, g.y, 7, 0, Math.PI * 2); ctx.fillStyle = '#d8c08a'; ctx.fill();
+  ctx.beginPath(); ctx.arc(g.x, g.y, 8, 0, Math.PI * 2); ctx.fillStyle = '#d8c08a'; ctx.fill();
   // Facing tick.
   ctx.beginPath();
-  ctx.moveTo(g.x + Math.cos(g.angle) * 15, g.y + Math.sin(g.angle) * 15);
-  ctx.lineTo(g.x + Math.cos(g.angle) * 24, g.y + Math.sin(g.angle) * 24);
+  ctx.moveTo(g.x + Math.cos(g.angle) * 17, g.y + Math.sin(g.angle) * 17);
+  ctx.lineTo(g.x + Math.cos(g.angle) * 27, g.y + Math.sin(g.angle) * 27);
   ctx.lineWidth = 4; ctx.strokeStyle = '#e8e0c8'; ctx.stroke();
-  // State label, big enough to read at small size.
-  if (g.state === 'alert') text(ctx, 'ALERT!', g.x, g.y - 30, 15, '#ff5a5a');
-  else if (g.state === 'suspicious') text(ctx, 'SUSPICIOUS?', g.x, g.y - 30, 13, '#ffc440');
-  else text(ctx, 'GUARD', g.x, g.y - 30, 11, '#c8cede');
+  // State label on a dark pill, big enough to read at small size.
+  if (g.state === 'alert') labelPill(ctx, 'ALERT!', g.x, g.y - 34, 16, '#ff5a5a');
+  else if (g.state === 'suspicious') labelPill(ctx, 'SUSPICIOUS?', g.x, g.y - 34, 14, '#ffc440');
+  else labelPill(ctx, 'GUARD', g.x, g.y - 34, 12, '#c8cede');
 }
 
 function drawCamera(ctx, cam) {
-  drawCone(ctx, cam.x, cam.y, cam.angle, CAM_RANGE, CAM_HALF_ANGLE, 'rgba(255, 90, 90, 0.20)', '#ff6a6a');
+  drawCone(ctx, cam.x, cam.y, cam.angle, CAM_RANGE, CAM_HALF_ANGLE, 'rgba(255, 90, 90, 0.24)', '#ff6a6a');
   ctx.beginPath(); ctx.arc(cam.x, cam.y, 10, 0, Math.PI * 2); ctx.fillStyle = '#3a3f55'; ctx.fill();
   ctx.lineWidth = 2; ctx.strokeStyle = '#ff6a6a'; ctx.stroke();
   ctx.beginPath(); ctx.arc(cam.x, cam.y, 4, 0, Math.PI * 2); ctx.fillStyle = '#ff4040'; ctx.fill();
-  text(ctx, 'CAMERA', cam.x, cam.y + 24, 11, '#ff9a9a', 'bold', 'center');
+  // Clamp the label inside the frame: wall cameras sit at the very edge.
+  const lx = Math.max(48, Math.min(VIEW_W - 48, cam.x));
+  labelPill(ctx, 'CAMERA', lx, cam.y + 26, 12, '#ff9a9a');
 }
 
 function drawThief(ctx, t) {
-  // Hooded figure: dark cloak, gold mask stripe, facing tick.
-  ctx.beginPath(); ctx.arc(t.x, t.y, 15, 0, Math.PI * 2); ctx.fillStyle = '#141828'; ctx.fill();
+  // Hooded figure: dark cloak, gold mask stripe, facing tick. Bigger than v1
+  // so the hero is unmistakable at contact-sheet size.
+  ctx.beginPath(); ctx.arc(t.x, t.y, 19, 0, Math.PI * 2); ctx.fillStyle = '#141828'; ctx.fill();
   ctx.lineWidth = 3; ctx.strokeStyle = GOLD; ctx.stroke();
-  ctx.beginPath(); ctx.arc(t.x, t.y, 8, 0, Math.PI * 2); ctx.fillStyle = '#e8d9a8'; ctx.fill();
+  ctx.beginPath(); ctx.arc(t.x, t.y, 10, 0, Math.PI * 2); ctx.fillStyle = '#e8d9a8'; ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(t.x + Math.cos(t.angle) * 8, t.y + Math.sin(t.angle) * 8);
-  ctx.lineTo(t.x + Math.cos(t.angle) * 22, t.y + Math.sin(t.angle) * 22);
+  ctx.moveTo(t.x + Math.cos(t.angle) * 10, t.y + Math.sin(t.angle) * 10);
+  ctx.lineTo(t.x + Math.cos(t.angle) * 27, t.y + Math.sin(t.angle) * 27);
   ctx.lineWidth = 4; ctx.strokeStyle = GOLD; ctx.stroke();
-  text(ctx, 'YOU — THE THIEF', t.x, t.y - 30, 12, '#ffe9a8');
+  labelPill(ctx, 'YOU — THE THIEF', t.x, t.y - 36, 14, '#ffe9a8');
 }
 
 function drawTreasure(ctx, tr, time) {
@@ -87,19 +113,19 @@ function drawTreasure(ctx, tr, time) {
   ctx.save();
   ctx.translate(tr.x, y);
   ctx.rotate(Math.PI / 4);
-  const s = tr.kind === 'relic' ? 11 : 8;
+  const s = tr.kind === 'relic' ? 13 : 10;
   ctx.fillStyle = tr.kind === 'relic' ? '#ff7ad9' : '#7ae0ff';
   ctx.fillRect(-s, -s, s * 2, s * 2);
   ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.strokeRect(-s, -s, s * 2, s * 2);
   ctx.restore();
-  ctx.beginPath(); ctx.arc(tr.x, y, 16 + Math.sin(time * 4 + tr.bob) * 3, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(tr.x, y, 18 + Math.sin(time * 4 + tr.bob) * 3, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 2; ctx.stroke();
 }
 
 function drawVault(ctx, vault, time) {
-  const glow = vault.taken ? 0.25 : 0.55 + Math.sin(time * 2.5) * 0.2;
+  const glow = vault.taken ? 0.3 : 0.7 + Math.sin(time * 2.5) * 0.25;
   ctx.save();
-  ctx.shadowColor = GOLD; ctx.shadowBlur = 26 * glow;
+  ctx.shadowColor = GOLD; ctx.shadowBlur = 38 * glow;
   ctx.fillStyle = vault.taken ? '#5a4a28' : '#8a6a1e';
   rr(ctx, vault.x, vault.y, vault.w, vault.h, 8); ctx.fill();
   ctx.restore();
@@ -109,9 +135,9 @@ function drawVault(ctx, vault, time) {
   ctx.strokeStyle = GOLD; ctx.lineWidth = 2; ctx.stroke();
   if (!vault.taken) {
     ctx.beginPath(); ctx.arc(vault.x + 42, vault.y + 32, 6, 0, Math.PI * 2); ctx.fillStyle = '#fff3c0'; ctx.fill();
-    text(ctx, 'VAULT — ' + vault.lootName.toUpperCase(), vault.x - 6, vault.y + 32, 14, '#ffe9a8', 'bold', 'right');
+    labelPillRight(ctx, 'VAULT — ' + vault.lootName.toUpperCase(), vault.x - 6, vault.y + 32, 16, '#ffe9a8');
   } else {
-    text(ctx, 'VAULT — EMPTIED', vault.x - 6, vault.y + 32, 14, '#b8b090', 'bold', 'right');
+    labelPillRight(ctx, 'VAULT — EMPTIED', vault.x - 6, vault.y + 32, 16, '#b8b090');
   }
 }
 
@@ -209,15 +235,16 @@ function drawHUD(ctx, s) {
   text(ctx, `STEAL: ${h.signature.toUpperCase()}  •  THEN REACH THE GREEN EXIT`, 420, 30, 15, '#ffe9a8');
   const taken = h.treasures.filter((t) => t.taken).length;
   text(ctx, `LOOT ${taken}/${h.treasures.length}  ◆  $${s.score}`, 420, 66, 16, '#7ae0ff');
-  // Alarm meter — big, labelled, impossible to miss.
+  // Alarm meter — big, labelled, impossible to miss. Taller than v1 so the
+  // fill level reads at contact-sheet size.
   const ax = 880, aw = 340;
-  text(ctx, 'ALARM', ax, 26, 16, '#ffffff');
+  text(ctx, 'ALARM', ax, 26, 18, '#ffffff');
   ctx.fillStyle = '#2a2f45';
-  rr(ctx, ax + 84, 12, aw, 26, 6); ctx.fill();
+  rr(ctx, ax + 84, 10, aw, 30, 6); ctx.fill();
   ctx.fillStyle = alarmColor(s.alarm);
-  if (s.alarm > 0) { rr(ctx, ax + 84, 12, Math.max(14, (aw * s.alarm) / 100), 26, 6); ctx.fill(); }
-  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; rr(ctx, ax + 84, 12, aw, 26, 6); ctx.stroke();
-  text(ctx, `${Math.round(s.alarm)}%`, ax + 84 + aw + 8, 26, 16, alarmColor(s.alarm));
+  if (s.alarm > 0) { rr(ctx, ax + 84, 10, Math.max(16, (aw * s.alarm) / 100), 30, 6); ctx.fill(); }
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; rr(ctx, ax + 84, 10, aw, 30, 6); ctx.stroke();
+  text(ctx, `${Math.round(s.alarm)}%`, ax + 84 + aw + 8, 26, 18, alarmColor(s.alarm));
   // Gadgets.
   const g = s.gadgets;
   text(ctx, `[1] SMOKE x${g.smoke}   [2] COIN x${g.coin}   [3] LOCKPICK`, 880, 66, 14, '#c8cede');
@@ -233,7 +260,7 @@ function drawTitle(ctx, s) {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   text(ctx, 'GILDED HOUR', VIEW_W / 2, 120, 84, GOLD, 'bold', 'center');
-  text(ctx, 'A LAMPLIGHT HEIST  •  5 HEISTS  •  21 GUARDS  •  40 TREASURES  •  13 CAMERAS  •  3 GADGETS', VIEW_W / 2, 178, 18, '#e8e0c8', 'bold', 'center');
+  text(ctx, 'A LAMPLIGHT HEIST  •  5 HEISTS  •  21 GUARDS  •  40 TREASURES  •  13 CAMERAS  •  3 GADGETS', VIEW_W / 2, 178, 20, '#e8e0c8', 'bold', 'center');
   text(ctx, 'Sneak past the cones. Blind the cameras. Lift the signature loot. Vanish out the green door.', VIEW_W / 2, 212, 17, '#c8cede', 'normal', 'center');
   // Heist list.
   let y = 268;
@@ -243,17 +270,19 @@ function drawTitle(ctx, s) {
     rr(ctx, 190, y, 900, 62, 10); ctx.fill();
     ctx.strokeStyle = sel ? GOLD : '#3a3f55'; ctx.lineWidth = sel ? 3 : 1;
     rr(ctx, 190, y, 900, 62, 10); ctx.stroke();
-    text(ctx, `${hh.id}. ${hh.name}`, 214, y + 22, 20, sel ? GOLD : '#e8e0c8');
-    text(ctx, `Steal the ${hh.signature}  •  ${hh.guards.length} guards  •  ${hh.cameras.length} cameras  •  ${hh.treasures.length} treasures`, 214, y + 46, 14, '#b8bcc8');
+    text(ctx, `${hh.id}. ${hh.name}`, 214, y + 22, 22, sel ? GOLD : '#e8e0c8');
+    text(ctx, `Steal the ${hh.signature}  •  ${hh.guards.length} guards  •  ${hh.cameras.length} cameras  •  ${hh.treasures.length} treasures`, 214, y + 46, 15, '#b8bcc8');
     text(ctx, hh.mood.toUpperCase(), 1064, y + 31, 13, '#8a94b0', 'bold', 'right');
     y += 74;
   }
-  text(ctx, 'CLICK A HEIST OR PRESS 1–5  •  WASD / ARROWS MOVE  •  SHIFT SNEAK  •  E PICK UP  •  1 SMOKE  •  2 + CLICK COIN  •  3 LOCKPICK', VIEW_W / 2, y + 26, 15, '#ffe9a8', 'bold', 'center');
+  text(ctx, 'CLICK A HEIST OR PRESS 1–5  •  WASD / ARROWS MOVE  •  SHIFT SNEAK  •  E PICK UP  •  1 SMOKE  •  2 + CLICK COIN  •  3 LOCKPICK', VIEW_W / 2, y + 26, 16, '#ffe9a8', 'bold', 'center');
   text(ctx, 'An original game: its own art, names, sounds and levels. No network, no files beyond this folder.', VIEW_W / 2, y + 58, 13, '#8a94b0', 'normal', 'center');
 }
 
 function drawEnd(ctx, s) {
-  ctx.fillStyle = s.screen === 'win' ? 'rgba(8, 30, 16, 0.88)' : 'rgba(30, 8, 12, 0.88)';
+  // Win dim is lighter than v1 so the won room still reads behind the banner
+  // and proves which heist was just completed.
+  ctx.fillStyle = s.screen === 'win' ? 'rgba(8, 30, 16, 0.80)' : 'rgba(30, 8, 12, 0.88)';
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   if (s.screen === 'win') {
     text(ctx, 'GETAWAY!', VIEW_W / 2, 300, 88, '#4be07a', 'bold', 'center');
